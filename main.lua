@@ -1,4 +1,5 @@
 function dump(o) -- modified
+-- Remember that this does just returns a string and does not print it!
     if o == nil then return 'nil' end
     if type(o) == 'table' then
       local s = '{ '
@@ -31,32 +32,64 @@ function tableIsArray(t) -- quick check, see if indices are sequential
   end
   return true
 end
+--- new utilities --
+function split(str, delim) -- split a string on delim
+  assert(#delim==1, "Delimiter in this split function must have length of 1 char")
+  local results = {}
+  for elem in string.gmatch(str, "[^" .. delim.. "]+") do
+    table.insert(results, elem)
+  end
+  return results
+end
+
+function map(func, array)
+  local new_array = {}
+  for i,v in ipairs(array) do
+    new_array[i] = func(v)
+  end
+  return new_array
+end
 
 ---============================
-function find (zarray, target, first, last)
-  first = first or 1
-  last = last or #zarray
-  if (last<first) then return -1 end
-  middle = first + math.floor((last-first)/2)
-  elem = zarray[middle]
-  if elem == target then return middle end
-  if target > elem then return find2(zarray, target, middle+1, last) end
-  return find2(zarray, target, first, middle-1)
+
+function Matrix(s)
+    function split(str, delim) -- split a string on delim
+      assert(#delim==1, "Delimiter in this split function must have length of 1 char")
+      local results = {}
+      for elem in string.gmatch(str, "[^" .. delim.. "]+") do
+        table.insert(results, elem)
+      end
+      return results
+    end
+    function map(func, array)
+      local new_array = {}
+      for i,v in ipairs(array) do
+        new_array[i] = func(v)
+      end
+      return new_array
+    end
+
+  local obj = {}
+  local rowsStr = split(s,"\n")
+  for _,v in ipairs(rowsStr) do
+    matRow = split(v,' ') -- string -> list of numbers as string {"1","2","3"}
+    table.insert(obj, map(tonumber,matRow))  -- convert to number {1,2,3}
+  end
+  obj.row = function(n) return obj[n] end
+  obj.column = function (n)
+        local result = {}
+        for _, row in ipairs(obj) do
+          table.insert(result, row[n])
+        end
+        return result
+      end      
+  
+  return obj
+
 end
 
-zarray = {1,2,3,4,5,6,7,8,9,10,11,12,13}
+ms = '1 2 3\n4 5 6\n72 8 9'
+m = Matrix(ms)
+pdump(m.row(2))
+pdump(m.column(2))
 
-assert(find2(zarray, 2) == 2)
-assert(find2(zarray, 0) == -1)
-assert(find2({}, 2)== -1)
-assert(find2(zarray, 50)==-1)
-assert(find2(zarray, 13)==13)
-
-qarray = {-1000, -200, 0, 12.5, 16, 50, 100, 1000, 2000}
-function test(array, n)
-  assert(array[find2(array,n)] == n)
-end
-
-test (qarray, -1000)
-test (qarray, -200)
-test (qarray, 1000)

@@ -1,3 +1,8 @@
+-- UTILITIES AND DEBUGGING
+bbcodes = bbcodes or {Red='[FF0000]', White='[FFFFFF]', Blue='[0000FF]', Green='[00FF00]',  -- for formatting output to notebook
+            Black='[000000]', Grey='[808080]', Yellow='[FFFF00]', None='[-]'}
+
+
 function dump(o) -- modified
     if o == nil then return 'nil' end
     if type(o) == 'table' then
@@ -30,4 +35,280 @@ function tableIsArray(t) -- quick check, see if indices are sequential
     i = i + 1
   end
   return true
+end
+
+----------- STRINGS ======================================
+
+function firstWord(s)
+    return string.match(s, ('%a+'))
+end
+
+
+function split(str, delim) -- split a string on delim
+  assert(#delim==1, "Delimiter in this split function must have length of 1 char")
+  local results = {}
+  for elem in string.gmatch(str, "[^" .. delim.. "]+") do
+    table.insert(results, elem)
+  end
+  return results
+end
+
+
+-------=========== TABLE FUNCTIONS ======================
+
+function arrayContains(array, value)  -- check if array contains value -- DOESN'T WORK WITH ASSOCIATIVE TABLES!
+    for i, v in ipairs(array) do
+        if v == value then return i end
+    end
+    return nil
+end
+
+function copyTable(t) --
+--- just enough to suit my needs, not a general utility!
+  if t == nil then return nil end
+  if not type(t) == 'table' then return end
+  local new = {}
+  for k, v in pairs(t) do
+    v2 = v
+    if type(v) == 'table' then
+        v2 = copyTable(v)
+    end
+    new[k] = v2
+  end
+  return new
+end
+
+function mergeTables(params, newParams)
+-- update params with newParams, return new table
+    local t = copyTable(params) or {}
+    if newParams then
+        for k, v in pairs(newParams) do
+            t[k] = v
+        end
+    end
+    return t
+end
+
+
+------------ filter Table
+function filterTable(t,filterFunction) -- return subset of elements for which filterFunction returns true
+  assert (filterFunction, 'filter function required in filterTable')
+  local result = {}
+  for k,v in pairs(t) do
+    if filterFunction(k,v) then
+      if type(k)=='number' then
+        table.insert(result,v)
+      else
+        result[k] = v
+      end
+    end
+  end
+  return result
+end
+
+
+function arrayRemove(array, value)  --  DOESN'T WORK WITH ASSOCIATIVE TABLES! (Just use array.value = nil)
+    local newArray = {}
+    for i, v in ipairs(array) do
+        if v ~= value then
+            table.insert(newArray,v)
+        end
+    end
+    return newArray
+end
+
+function map(func, array)
+  local new_array = {}
+  for i,v in ipairs(array) do
+    new_array[i] = func(v)
+  end
+  return new_array
+end
+
+----------- PRINTING FOR DEBUG
+
+function printGUIDPosition(guid, msg)
+    local pos = getObjectFromGUID(guid).getPosition()
+    print(dump(pos))
+    printPosition(pos, msg)
+end
+
+function printPosition(pos, msg)
+  if type(pos) == 'string' then print('Error: first argument to printPosition must be the position vector') end
+  if type(pos) == 'userdata' then
+      print('*')
+      local pos = pos.getPosition()
+  end
+  assert(pos[1] and pos[2], 'Nil in printPosition' .. dump(pos))
+  local str = (msg or '') .. '{' ..
+      string.format('%.2f',pos[1] or 'nil') .. ', ' ..
+      string.format('%.2f',pos[2] or 'nil')
+  if pos[3] then str = str .. ', ' .. string.format('%.2f',pos[3] or 'nil') end
+  print(str .. '}')
+end
+positionPrint = printPosition
+
+function debugPrint(switch, table)
+    assert(type(table) == 'table', "Debug print takes switch and table!")
+--    print ('debug print, sw=', switch, ': ', debug.switch)
+    if debug[switch] then
+        for i,v in ipairs(table) do
+            print(v)
+        end
+    end
+end
+
+function printDelim(vals, delim )
+    local delim = delim or ', '
+    s = ''
+    for i, v in ipairs(vals) do
+        if i ~= 1 then s = s .. delim end
+        s = s .. tostring(v)
+    end
+    print(s)
+end
+
+function printNote(s, color)
+    defaultNotebookTextColor = 'White'
+    notesBuffer = notesBuffer or ''
+    if (options ~= nil) and (not options.showNotes) then return end
+        -- (options~=nil) so we can use printNote before options has been defined in onLoad()
+    local color = color or defaultNotebookTextColor
+    bbcolor = bbcodes[color] or ''
+    notesBuffer = bbcolor .. s .. bbcodes['None'] .. '\n' .. notesBuffer
+    Notes.setNotes(notesBuffer)
+end
+printNotes = printNote
+
+function clearNotes()
+    notesBuffer = ''
+    Notes.setNotes('')
+end
+
+function printMessage(player, msg, params)
+    playerMessageButton(player, msg, params)
+end
+printMsg = printMessage
+
+--------- READ ONLY TABLES ============
+
+function readOnly (t)
+  --from PIL 13:4 -- returns proxy for t which is read-only
+  -- notes: this only works on the table itself, not on subtables
+  --        this breaks iterators so pairs, ipairs, and dump won't work, you have to know
+  --        which fields the table contains.
+  local proxy = {}
+  local mt = {       -- create metatable
+    __index = t,
+    __newindex = function (t,k,v)
+      error("attempt to update a read-only table", 2)
+    end
+  }
+  setmetatable(proxy, mt)
+  return proxy
+end
+
+
+----------======== VECTORS ========-------------
+
+function rotate(v, angle)  -- 2d rotation of standard TTS position vector
+    local rad = angle * deg2rad
+    local sin = math.sin(rad)
+    local cos = math.cos(rad)
+    local x2 = (cos * v.x) - (sin * v.z)
+    local z2 = (sin * v.x) + (cos * v.z)
+    return Vector(x2, v.y, z2)
+end
+
+-- ======== Formatting =====================
+function fmt2(f)
+  return string.format("%.2f", f)
+end
+
+------============ MAKE PRINTABLE ===========
+function makePrintable(t, newToString)
+-- Make a table object printable with 'print(t)' using aux function tostring.
+-- Ways to call:
+--   - makePrintable(t) -- uses an already-existing t.tostring(t) or dump(t)
+--     e.g. t={1,2,3};
+--			function t.tostring(x) return x[1] .. ':' .. x[2] .. ':' .. x[3] end
+--			makePrintable(t)
+--   - makePrintable(t, newToString) -- uses new fx (in any namespace)
+--   - e.g. makePrintable(t, myArrayDump)
+  local mt = getmetatable(t)
+  if mt==nil then
+    mt = {}
+    setmetatable(t,mt)
+  end
+  if newToString then
+    t.tostring = newToString
+  end
+  --assert(t.tostring, "printtable requires tostring object.tostring function")
+  if t.tostring == nil then t.tostring = dump end
+  mt.__tostring = t.tostring
+end
+
+-- ========= BAGS =============
+
+function emptyBag(bag)
+    local discardCount = bag.getQuantity()
+    local d
+    for i=1, discardCount do
+        d = bag.takeObject({})
+        d.destruct()
+        --tilePool.putObject(d)
+    end
+end
+
+function transferBags(source, destination, delay)
+    local discardCount = source.getQuantity()
+    local d
+    for i=1, discardCount do
+        if (delay==nil) or (delay==0) then
+            d = source.takeObject({})
+            destination.putObject(d)
+        else
+            Wait.time(function()
+                        d = source.takeObject({})
+                        destination.putObject(d)
+                      end,
+                 i*delay)
+        end
+    end
+end
+
+function countItemsInBag(bag)
+    --return #bag.getObjects()
+    if bag == nil then return 0 end
+    return bag.getQuantity()
+end
+
+----------STUFF With OBJECTS
+
+function toGUID(x) -- takes either object or GUID, returns GUID
+  if x.getGUID then return x:getGUID() end  -- change : !
+  if type(x)=='string' then return(x) end
+  error('toGUID argument must be an object or a string GUID',2)
+end
+
+function toObject(x) -- takes either object or GUID, returns object
+  if x == nil then error('No argument or nil argument supplied to toObject(x)') end
+  if type(x)=='string' then return getObjectFromGUID(x) end
+  if x.getGUID then return x end
+  error('toObject argument must be an object or a string GUID')
+end
+
+
+function raise(object,dy)
+    local p = object.getPosition()
+    p.y = p.y + dy
+    object.setPosition(p)
+end
+
+function lock(object)
+    object.setLock(true)
+end
+
+function unlock(object)
+    object.setLock(false)
 end
