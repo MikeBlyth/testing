@@ -1,0 +1,45 @@
+function bob(n)
+  if n > 1 then
+    return n .. " bottles of beer"
+  end
+  if n == 1 then
+    return "1 bottle of beer"
+  end 
+  return 'No more bottles of beer'
+end
+
+function bobw(n)
+  return bob(n) .. " on the wall"
+end  
+
+function verse(n)
+  local s
+  s = bobw(n) .. ', ' .. string.lower(bob(n)) .. ".\n"
+  if n > 0 then 
+    if n > 1 then 
+      s = s .. "Take one" 
+    end
+    if n == 1 then
+      s =  s .. "Take it" 
+    end
+    s = s .. " down and pass it around, "  .. string.lower(bobw(n-1)) .. '.' 
+  else -- n == 0
+    s = s .. "Go to the store and buy some more, " .. bobw(99) .. "." 
+  end
+  return s .. "\n"
+end
+
+function sing(start, stop)
+  local endVerse = stop or 0
+  local s = ''
+  for i=start, endVerse, -1 do
+    if i < start then s = s .. '\n' end
+    s = s .. verse(i)
+  end
+  return s
+end
+
+print(verse(99))
+print(verse(1))
+print(verse(0))
+print(sing(2,0))

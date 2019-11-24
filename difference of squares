@@ -1,0 +1,16 @@
+-- Difference Of Squares
+
+function square_of_sum(m) 
+  return ((m*(m+1)/2)^2)
+end  
+
+function sum_of_squares(m)
+  return (m*(m+1)*(2*m+1)/6)
+end
+
+function difference_of_squares(m)
+  return square_of_sum(m) - sum_of_squares(m)
+end
+
+ss = difference_of_squares
+print (ss(0), ss(5), ' ', ss(10), ' ', ss(100))

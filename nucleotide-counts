@@ -1,0 +1,33 @@
+DNA = {}
+
+function DNA:new(s) 
+	obj = {seq=s}
+	setmetatable(obj, self)
+	self.__index = self
+  obj.nucleotideCounts = DNA.getCounts(s)
+	return obj
+end
+
+function DNA:count(nuc)
+  count = self.nucleotideCounts[nuc]
+  assert(count, 'Error: invalid nucleotide code')
+  return self.nucleotideCounts[nuc]
+end
+
+function DNA.getCounts(s)
+  local counts = {A=0, C=0, T=0, G=0}
+  for i=1, #s do
+    char = string.sub(s, i, i)
+    if counts[char] then
+      counts[char] = counts[char] + 1
+    end
+  end
+  return counts
+end
+
+dna = DNA:new('AAATTTGGCC')
+print ('Counts=', dna:count('A'), ', ', dna:count('C'))
+t = dna.nucleotideCounts
+pdump(t)
+
+return DNA

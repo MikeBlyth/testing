@@ -1,0 +1,39 @@
+--local house = {}
+house = {}
+function house.buildVerse(n)
+  if n == 1 then 
+    return data[1].subj 
+  else 
+    return  data[n].subj .. '\nthat ' .. data[n].verb .. ' the ' .. house.buildVerse(n-1)
+  end
+end
+
+data = {
+	{subj = 'house that Jack built.'},
+	{subj = 'malt', verb='lay in'},
+	{subj = 'rat', verb='ate'},
+	{subj = 'cat', verb='killed'},
+	{subj = 'dog', verb='worried'},
+	{subj = 'cow with the crumpled horn', verb='tossed'},
+	{subj = 'maiden all forlorn', verb='milked'},
+	{subj = 'man all tattered and torn', verb='kissed'},
+	{subj = 'priest all shaven and shorn', verb='married'},
+	{subj = 'rooster that crowed in the morn', verb='woke'},
+	{subj = 'farmer sowing his corn', verb='kept'},
+	{subj = 'horse and the hound and the horn', verb='belonged to'},
+	}
+
+function house.verse(n)
+  return 'This is the ' .. house.buildVerse(n)
+end
+
+function house.recite()
+	local s = ''
+  for i=1, #data do
+    if i > 1 then s = s .. '\n\n' end
+    s = s .. house.verse(i)
+  end  
+  return s
+end
+
+return house
