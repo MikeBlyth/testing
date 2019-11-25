@@ -52,44 +52,47 @@ end
 
 ---============================
 
-function Matrix(s)
-    function split(str, delim) -- split a string on delim
-      assert(#delim==1, "Delimiter in this split function must have length of 1 char")
-      local results = {}
-      for elem in string.gmatch(str, "[^" .. delim.. "]+") do
-        table.insert(results, elem)
-      end
-      return results
-    end
-    function map(func, array)
-      local new_array = {}
-      for i,v in ipairs(array) do
-        new_array[i] = func(v)
-      end
-      return new_array
-    end
+local codonVals =
+  {AUG =	'Methionine',
+  UUU =	'Phenylalanine',
+  UUC	= 'Phenylalanine',
+  UUA =	'Leucine',
+  UUG =	'Leucine',
+  UCU =	'Serine', UCC='Serine', UCA='Serine', UCG =	'Serine',
+  UAU = 'Tyrosine', UAC =	'Tyrosine',
+  UGU = 'Cysteine', UGC = 'Cysteine',
+  UGG	= 'Tryptophan',
+  UAA = 'STOP', UAG = 'STOP', UGA = 'STOP'}
 
-  local obj = {}
-  local rowsStr = split(s,"\n")
-  for _,v in ipairs(rowsStr) do
-    matRow = split(v,' ') -- string -> list of numbers as string {"1","2","3"}
-    table.insert(obj, map(tonumber,matRow))  -- convert to number {1,2,3}
-  end
-  obj.row = function(n) return obj[n] end
-  obj.column = function (n)
-        local result = {}
-        for _, row in ipairs(obj) do
-          table.insert(result, row[n])
-        end
-        return result
-      end      
-  
-  return obj
-
+local function translate_codon(codon)
+  local val = codonVals[codon]
+  assert(val, "Invalid codon " .. codon .. ' encountered.')
+  return val
 end
 
-ms = '1 2 3\n4 5 6\n72 8 9'
-m = Matrix(ms)
-pdump(m.row(2))
-pdump(m.column(2))
+function translate_rna_strand(rna_strand)
+  if rna_strand == '' then return {} end 
+  local thisPep = translate_codon(string.sub(rna_strand,1,3))
+  if thisPep=='STOP' then return {} end 
+  local tr = translate_rna_strand(string.sub(rna_strand,4))
+  table.insert(tr, 1, translate_codon(string.sub(rna_strand,1,3)))
+  return tr
+end
+
+tr = translate_rna_strand
+
+st1 = 'UUUUUAUCUUAUUAAUCUUCU'
+st0 = 'UUU'
+
+print(translate_codon('UUA'))
+translated = translate_rna_strand(st1)
+pdump(translated)
+
+
+return {
+  codon = translate_codon,
+  rna_strand = translate_rna_strand
+}
+
+
 

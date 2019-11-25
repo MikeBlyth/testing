@@ -1,0 +1,41 @@
+local codonVals =
+  {AUG =	'Methionine',
+  UUU =	'Phenylalanine',
+  UUC	= 'Phenylalanine',
+  UUA =	'Leucine',
+  UUG =	'Leucine',
+  UCU =	'Serine', UCC='Serine', UCA='Serine', UCG =	'Serine',
+  UAU = 'Tyrosine', UAC =	'Tyrosine',
+  UGU = 'Cysteine', UGC = 'Cysteine',
+  UGG	= 'Tryptophan',
+  UAA = 'STOP', UAG = 'STOP', UGA = 'STOP'}
+
+local function translate_codon(codon)
+  local val = codonVals[codon]
+  assert(val, "Invalid codon " .. codon .. ' encountered.')
+  return val
+end
+
+function translate_rna_strand(rna_strand)
+  if rna_strand == '' then return {} end 
+  local thisPep = translate_codon(string.sub(rna_strand,1,3))
+  if thisPep=='STOP' then return {} end 
+  local tr = translate_rna_strand(string.sub(rna_strand,4))
+  table.insert(tr, 1, translate_codon(string.sub(rna_strand,1,3)))
+  return tr
+end
+
+tr = translate_rna_strand
+
+st1 = 'UUUUUAUCUUAUUAAUCUUCU'
+st0 = 'UUU'
+
+print(translate_codon('UUA'))
+translated = translate_rna_strand(st1)
+pdump(translated)
+
+
+return {
+  codon = translate_codon,
+  rna_strand = translate_rna_strand
+}
